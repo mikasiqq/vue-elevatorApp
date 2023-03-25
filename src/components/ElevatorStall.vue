@@ -1,17 +1,18 @@
 <template>
   <div class="elevatorStall">
-    <ElevatorShaft />
+    <ElevatorShaft :elevatorFloor="props.elevatorFloor" />
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import ElevatorShaft from '@/components/ElevatorShaft.vue'
 
 import { elevatorFloors } from '../config.js'
 
-const props = defineProps(['elevatorStallId'])
+const props = defineProps(['elevatorFloor', 'elevatorId'])
 
-const elevatorStallColumn = `${props.elevatorStallId} / ${props.elevatorStallId + 1}`
+const elevatorStallColumn = computed(() => `${props.elevatorId + 1} / ${props.elevatorId + 2}`)
 </script>
 
 <style lang="scss" scoped>

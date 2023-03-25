@@ -1,7 +1,7 @@
 <template>
   <div class="elevatorFloor">
     <span>{{ elevatorFloorId }}</span>
-    <button>
+    <button @click="() => $emit('floorHandler', elevatorFloorId)">
       <svg width="26" height="26">
         <circle cx="13" cy="13" r="8" stroke="rgb(75, 196, 205)" stroke-width="1.5" fill="none" />
         <circle cx="13" cy="13" r="4" stroke="rgb(75, 196, 205)" fill="rgb(75, 196, 205)" />
@@ -40,6 +40,7 @@ const elevatorFloorRow = `${elevatorFloors - props.elevatorFloorId + 1} / ${
     border-radius: 4px;
     width: 30px;
     height: 30px;
+    cursor: pointer;
   }
 }
 </style>
