@@ -10,9 +10,12 @@
 
 <script setup>
 import { computed } from 'vue'
+
 import ElevatorShaft from '@/components/ElevatorShaft.vue'
 import { elevatorFloors } from '../config.js'
+
 const props = defineProps(['elevatorFloor', 'elevatorId', 'elevatorState', 'elevatorResting'])
+
 const elevatorStallColumn = computed(() => `${props.elevatorId + 1} / ${props.elevatorId + 2}`)
 </script>
 

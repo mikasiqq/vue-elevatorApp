@@ -1,7 +1,7 @@
 <template>
   <div
     :class="['elevatorShaft', { elevatorShaftResting: props.elevatorResting }]"
-    :style="[elevatorShaftStyle, elevatorBlinkingStyle]"
+    :style="[elevatorShaftStyle]"
   >
     <ElevatorInfo
       v-if="elevatorState === 'goingUp' || elevatorState === 'goingDown'"
@@ -12,7 +12,7 @@
 </template>
 
 <script setup>
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 import ElevatorInfo from '@/components/ElevatorInfo.vue'
 
 const props = defineProps(['elevatorFloor', 'elevatorState', 'elevatorResting'])
@@ -27,14 +27,6 @@ const elevatorShaftStyle = computed(() => {
     transform: `translateY(${translateY}px)`
   }
 })
-
-watch(
-  () => [props.elevatorFloor, props.elevatorState, props.elevatorResting],
-  (newValue, oldValue) => {
-    console.log('Old value:', oldValue)
-    console.log('New value:', newValue)
-  }
-)
 </script>
 
 <style lang="scss" scoped>

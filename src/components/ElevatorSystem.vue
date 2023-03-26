@@ -31,7 +31,7 @@ for (let i = 0; i < elevatorFloors; i++) {
   })
 }
 
-function goToFloor(floor) {
+function findClosestAvailableElevator(floor) {
   let closestElevator = null
   let closestDistance = Infinity
 
@@ -45,50 +45,39 @@ function goToFloor(floor) {
     }
   }
 
-  if (closestElevator.currentFloor === floor) return
+  return closestElevator
+}
 
-  const floorIndex = floors.findIndex((el) => el.id === floor)
-  if (floorIndex !== -1) {
-    floors[floorIndex].isActive = true
-  }
+function isElevatorAvailable(elevator, floor) {
+  return elevator.isAvailable && elevator.currentFloor !== floor && !floors[floor - 1].isActive
+}
 
-  if (closestElevator) {
-    closestElevator.isAvailable = false
-    closestElevator.destinationFloor = floor
-    closestElevator.state = closestElevator.currentFloor < floor ? 'goingUp' : 'goingDown'
-    setTimeout(() => {
-      closestElevator.currentFloor = closestElevator.destinationFloor
+function setElevatorState(elevator, floor) {
+  elevator.isAvailable = false
+  elevator.destinationFloor = floor
+  elevator.state = elevator.currentFloor < floor ? 'goingUp' : 'goingDown'
+}
+function goToFloor(floor) {
+  const closestElevator = findClosestAvailableElevator(floor)
 
-      if (closestElevator.resting) {
-        setTimeout(() => {
-          closestElevator.state = 'idle'
-          closestElevator.isAvailable = true
-          closestElevator.resting = false
+  if (!closestElevator || !isElevatorAvailable(closestElevator, floor)) return
 
-          if (floorIndex !== -1) {
-            floors[floorIndex].isActive = false
-          }
-        }, restTime)
-      } else {
-        closestElevator.state = 'resting'
-        closestElevator.resting = true
+  setElevatorState(closestElevator, floor)
 
-        setTimeout(() => {
-          closestElevator.state = 'idle'
-          closestElevator.isAvailable = true
-          closestElevator.resting = false
+  const floorIndex = floor - 1
+  floors[floorIndex].isActive = true
 
-          if (floorIndex !== -1) {
-            floors[floorIndex].isActive = false
-          }
-        }, restTime)
-      }
-    }, Math.abs(closestElevator.currentFloor - floor) * 1000)
-  } else {
-    setTimeout(() => {
-      goToFloor(floor)
-    }, 1000)
-  }
+  const stopTime = Math.abs(closestElevator.currentFloor - floor) * 1000
+  setTimeout(() => {
+    closestElevator.currentFloor = closestElevator.destinationFloor
+    closestElevator.state = closestElevator.resting ? 'idle' : 'resting'
+    closestElevator.isAvailable = true
+    closestElevator.resting = !closestElevator.resting
+
+    if (floorIndex !== -1) {
+      floors[floorIndex].isActive = false
+    }
+  }, stopTime + restTime)
 }
 </script>
 
