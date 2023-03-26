@@ -1,17 +1,14 @@
 <template>
   <div class="elevatorStall">
-    <ElevatorShaft :elevatorFloor="props.elevatorFloor" />
+    <ElevatorShaft :elevatorFloor="props.elevatorFloor" :elevatorState="props.elevatorState" />
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import ElevatorShaft from '@/components/ElevatorShaft.vue'
-
 import { elevatorFloors } from '../config.js'
-
-const props = defineProps(['elevatorFloor', 'elevatorId'])
-
+const props = defineProps(['elevatorFloor', 'elevatorId', 'elevatorState'])
 const elevatorStallColumn = computed(() => `${props.elevatorId + 1} / ${props.elevatorId + 2}`)
 </script>
 
@@ -21,7 +18,6 @@ const elevatorStallColumn = computed(() => `${props.elevatorId + 1} / ${props.el
   grid-column: v-bind(elevatorStallColumn);
   grid-template-rows: repeat(v-bind(elevatorFloors), 100px);
   grid-template-columns: 100px;
-
   margin: 0 5px;
   border-left: 2px solid rgb(215, 215, 215);
   border-right: 2px solid rgb(215, 215, 215);

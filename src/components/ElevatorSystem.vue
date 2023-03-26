@@ -14,12 +14,14 @@ for (let i = 0; i < elevatorStalls; i++) {
     id: i,
     isAvailable: true,
     currentFloor: 1,
-    state: 'idle'
+    state: 'idle',
+    destinationFloor: 1
   })
 }
 function goToFloor(floor) {
   let closestElevator = null
   let closestDistance = Infinity
+
   for (const elevator of elevators) {
     if (elevator.isAvailable) {
       const distance = Math.abs(elevator.currentFloor - floor)
@@ -32,12 +34,17 @@ function goToFloor(floor) {
 
   if (closestElevator) {
     closestElevator.isAvailable = false
+    closestElevator.destinationFloor = floor
     closestElevator.state = closestElevator.currentFloor < floor ? 'goingUp' : 'goingDown'
     setTimeout(() => {
-      closestElevator.currentFloor = floor
+      closestElevator.currentFloor = closestElevator.destinationFloor
       closestElevator.state = 'idle'
       closestElevator.isAvailable = true
     }, Math.abs(closestElevator.currentFloor - floor) * 1000)
+  } else {
+    setTimeout(() => {
+      goToFloor(floor)
+    }, 1000)
   }
 }
 </script>
@@ -49,7 +56,8 @@ function goToFloor(floor) {
       v-for="elevatorStall in elevators"
       :key="elevatorStall.id"
       :elevatorId="elevatorStall.id"
-      :elevatorFloor="elevatorStall.currentFloor"
+      :elevatorFloor="elevatorStall.destinationFloor"
+      :elevatorState="elevatorStall.state"
     />
     <div class="elevatorFloors">
       <ElevatorFloor

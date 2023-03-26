@@ -1,9 +1,18 @@
 <template>
-  <div class="elevatorShaft" :style="elevatorShaftStyle"></div>
+  <div class="elevatorShaft" :style="elevatorShaftStyle">
+    <ElevatorInfo
+      v-if="elevatorState === 'goingUp' || elevatorState === 'goingDown'"
+      :elevatorState="props.elevatorState"
+      :destinationFloor="props.elevatorFloor"
+    />
+  </div>
 </template>
 <script setup>
 import { computed } from 'vue'
-const props = defineProps(['elevatorFloor'])
+
+import ElevatorInfo from '@/components/ElevatorInfo.vue'
+
+const props = defineProps(['elevatorFloor', 'elevatorState'])
 import { elevatorFloors } from '../config.js'
 
 const elevatorFloorRowHeight = 100
