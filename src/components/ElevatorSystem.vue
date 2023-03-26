@@ -9,15 +9,28 @@ const elevatorFloorsColumn = computed(() => `${elevatorStalls + 1} / ${elevatorS
 const elevatorFloorsRow = computed(() => `1 / ${elevatorFloors + 1}`)
 
 const elevators = reactive([])
+const floors = reactive([])
+
+const restTime = 3000
+
 for (let i = 0; i < elevatorStalls; i++) {
   elevators.push({
     id: i,
     isAvailable: true,
     currentFloor: 1,
     state: 'idle',
-    destinationFloor: 1
+    destinationFloor: 1,
+    resting: false
   })
 }
+
+for (let i = 0; i < elevatorFloors; i++) {
+  floors.push({
+    id: i + 1,
+    isActive: false
+  })
+}
+
 function goToFloor(floor) {
   let closestElevator = null
   let closestDistance = Infinity
@@ -32,14 +45,44 @@ function goToFloor(floor) {
     }
   }
 
+  if (closestElevator.currentFloor === floor) return
+
+  const floorIndex = floors.findIndex((el) => el.id === floor)
+  if (floorIndex !== -1) {
+    floors[floorIndex].isActive = true
+  }
+
   if (closestElevator) {
     closestElevator.isAvailable = false
     closestElevator.destinationFloor = floor
     closestElevator.state = closestElevator.currentFloor < floor ? 'goingUp' : 'goingDown'
     setTimeout(() => {
       closestElevator.currentFloor = closestElevator.destinationFloor
-      closestElevator.state = 'idle'
-      closestElevator.isAvailable = true
+
+      if (closestElevator.resting) {
+        setTimeout(() => {
+          closestElevator.state = 'idle'
+          closestElevator.isAvailable = true
+          closestElevator.resting = false
+
+          if (floorIndex !== -1) {
+            floors[floorIndex].isActive = false
+          }
+        }, restTime)
+      } else {
+        closestElevator.state = 'resting'
+        closestElevator.resting = true
+
+        setTimeout(() => {
+          closestElevator.state = 'idle'
+          closestElevator.isAvailable = true
+          closestElevator.resting = false
+
+          if (floorIndex !== -1) {
+            floors[floorIndex].isActive = false
+          }
+        }, restTime)
+      }
     }, Math.abs(closestElevator.currentFloor - floor) * 1000)
   } else {
     setTimeout(() => {
@@ -58,12 +101,14 @@ function goToFloor(floor) {
       :elevatorId="elevatorStall.id"
       :elevatorFloor="elevatorStall.destinationFloor"
       :elevatorState="elevatorStall.state"
+      :elevatorResting="elevatorStall.resting"
     />
     <div class="elevatorFloors">
       <ElevatorFloor
-        v-for="elevatorFloor in elevatorFloors"
-        :key="elevatorFloor"
-        :elevatorFloorId="elevatorFloor"
+        v-for="elevatorFloor in floors"
+        :key="elevatorFloor.id"
+        :elevatorFloorId="elevatorFloor.id"
+        :isActive="elevatorFloor.isActive"
         @floorHandler="goToFloor"
       />
     </div>

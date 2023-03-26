@@ -1,4 +1,4 @@
-const elevatorStalls = 2
+const elevatorStalls = 4
 const elevatorFloors = 7
 
 export { elevatorStalls, elevatorFloors }
