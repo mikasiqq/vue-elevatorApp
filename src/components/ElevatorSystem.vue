@@ -1,17 +1,16 @@
 <script setup>
 import { computed, reactive } from 'vue'
+
 import ElevatorStall from '@/components/ElevatorStall.vue'
 import ElevatorFloor from '@/components/ElevatorFloor.vue'
 
-import { elevatorStalls, elevatorFloors } from '../config.js'
+import { elevatorStalls, elevatorFloors, restTime } from '../config.js'
 
 const elevatorFloorsColumn = computed(() => `${elevatorStalls + 1} / ${elevatorStalls + 2}`)
 const elevatorFloorsRow = computed(() => `1 / ${elevatorFloors + 1}`)
 
 const elevators = reactive([])
 const floors = reactive([])
-
-const restTime = 3000
 
 for (let i = 0; i < elevatorStalls; i++) {
   elevators.push({
@@ -23,7 +22,6 @@ for (let i = 0; i < elevatorStalls; i++) {
     resting: false
   })
 }
-
 for (let i = 0; i < elevatorFloors; i++) {
   floors.push({
     id: i + 1,
@@ -34,7 +32,6 @@ for (let i = 0; i < elevatorFloors; i++) {
 function findClosestAvailableElevator(floor) {
   let closestElevator = null
   let closestDistance = Infinity
-
   for (const elevator of elevators) {
     if (elevator.isAvailable) {
       const distance = Math.abs(elevator.currentFloor - floor)
@@ -44,7 +41,6 @@ function findClosestAvailableElevator(floor) {
       }
     }
   }
-
   return closestElevator
 }
 
@@ -57,6 +53,7 @@ function setElevatorState(elevator, floor) {
   elevator.destinationFloor = floor
   elevator.state = elevator.currentFloor < floor ? 'goingUp' : 'goingDown'
 }
+
 function goToFloor(floor) {
   const closestElevator = findClosestAvailableElevator(floor)
 
@@ -67,17 +64,40 @@ function goToFloor(floor) {
   const floorIndex = floor - 1
   floors[floorIndex].isActive = true
 
-  const stopTime = Math.abs(closestElevator.currentFloor - floor) * 1000
-  setTimeout(() => {
-    closestElevator.currentFloor = closestElevator.destinationFloor
-    closestElevator.state = closestElevator.resting ? 'idle' : 'resting'
-    closestElevator.isAvailable = true
-    closestElevator.resting = !closestElevator.resting
+  if (closestElevator) {
+    closestElevator.isAvailable = false
+    closestElevator.destinationFloor = floor
+    closestElevator.state = closestElevator.currentFloor < floor ? 'goingUp' : 'goingDown'
+    setTimeout(() => {
+      closestElevator.currentFloor = closestElevator.destinationFloor
 
-    if (floorIndex !== -1) {
-      floors[floorIndex].isActive = false
-    }
-  }, stopTime + restTime)
+      if (closestElevator.resting) {
+        setTimeout(() => {
+          closestElevator.state = 'idle'
+          closestElevator.isAvailable = true
+          closestElevator.resting = false
+
+          if (floorIndex !== -1) {
+            floors[floorIndex].isActive = false
+          }
+        }, restTime)
+      } else {
+        closestElevator.state = 'resting'
+        closestElevator.resting = true
+
+        setTimeout(() => {
+          closestElevator.state = 'idle'
+          closestElevator.inProgress = 'false'
+          closestElevator.isAvailable = true
+          closestElevator.resting = false
+
+          if (floorIndex !== -1) {
+            floors[floorIndex].isActive = false
+          }
+        }, restTime)
+      }
+    }, Math.abs(closestElevator.currentFloor - floor) * 1000)
+  }
 }
 </script>
 
@@ -109,7 +129,6 @@ function goToFloor(floor) {
   width: fit-content;
   height: fit-content;
   display: grid;
-
   grid-template-rows: repeat(v-bind(elevatorFloors), 100px);
   grid-template-columns: repeat(v-bind(elevatorStalls) + 1, 60px);
 }
