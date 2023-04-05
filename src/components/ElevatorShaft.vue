@@ -13,10 +13,11 @@
 
 <script setup>
 import { computed } from 'vue'
+import { elevatorFloors } from '../config.js'
+
 import ElevatorInfo from '@/components/ElevatorInfo.vue'
 
 const props = defineProps(['elevatorFloor', 'elevatorState', 'elevatorResting'])
-import { elevatorFloors } from '../config.js'
 
 const elevatorFloorRowHeight = 100
 const topFloor = elevatorFloors

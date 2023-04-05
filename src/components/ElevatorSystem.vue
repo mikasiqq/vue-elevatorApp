@@ -11,6 +11,7 @@ const elevatorFloorsRow = computed(() => `1 / ${elevatorFloors + 1}`)
 
 const elevators = reactive([])
 const floors = reactive([])
+const queue = reactive([])
 
 for (let i = 0; i < elevatorStalls; i++) {
   elevators.push({
@@ -32,6 +33,7 @@ for (let i = 0; i < elevatorFloors; i++) {
 function findClosestAvailableElevator(floor) {
   let closestElevator = null
   let closestDistance = Infinity
+
   for (const elevator of elevators) {
     if (elevator.isAvailable) {
       const distance = Math.abs(elevator.currentFloor - floor)
@@ -41,6 +43,13 @@ function findClosestAvailableElevator(floor) {
       }
     }
   }
+
+  if (!closestElevator) {
+    const notAvailableElevator = elevators.find((elevator) => elevator.id === queue[0].elevatorId)
+    queue.shift()
+    queue.push({ elevatorId: notAvailableElevator.id, floorId: floor })
+  }
+
   return closestElevator
 }
 
@@ -54,6 +63,38 @@ function setElevatorState(elevator, floor) {
   elevator.state = elevator.currentFloor < floor ? 'goingUp' : 'goingDown'
 }
 
+function makeElevatorRest(elevator, floorIndex) {
+  setTimeout(() => {
+    elevator.state = 'idle'
+    elevator.isAvailable = true
+    elevator.resting = false
+    if (floorIndex !== -1) {
+      floors[floorIndex].isActive = false
+    }
+    queue.shift()
+
+    const elevatorInQueue = queue.find((q) => q.elevatorId === elevator.id)
+    if (elevatorInQueue) {
+      floors[elevatorInQueue.floorId - 1].isActive = true
+
+      setTimeout(() => {
+        elevator.destinationFloor = elevatorInQueue.floorId
+        elevator.state = elevator.currentFloor < elevator.destinationFloor ? 'goingUp' : 'goingDown'
+
+        setTimeout(() => {
+          elevator.currentFloor = elevator.destinationFloor
+
+          elevator.state = 'resting'
+          elevator.resting = true
+          makeElevatorRest(elevator, elevatorInQueue.floorId - 1)
+        }, Math.abs(elevator.currentFloor - elevatorInQueue.floorId) * 1000)
+        console.log(queue[0], elevator, 'el')
+      }, restTime)
+    }
+    console.log(elevators)
+  }, restTime)
+}
+
 function goToFloor(floor) {
   const closestElevator = findClosestAvailableElevator(floor)
 
@@ -61,42 +102,26 @@ function goToFloor(floor) {
 
   setElevatorState(closestElevator, floor)
 
-  const floorIndex = floor - 1
-  floors[floorIndex].isActive = true
+  queue.push({ elevatorId: closestElevator.id, floorId: floor })
+  queueHandler()
+}
 
-  if (closestElevator) {
-    closestElevator.isAvailable = false
-    closestElevator.destinationFloor = floor
-    closestElevator.state = closestElevator.currentFloor < floor ? 'goingUp' : 'goingDown'
-    setTimeout(() => {
-      closestElevator.currentFloor = closestElevator.destinationFloor
+function queueHandler() {
+  if (queue.length > 0) {
+    for (const el of queue) {
+      const elevator = elevators.find((elevator) => elevator.id === el.elevatorId)
+      const floor = floors.find((floor) => floor.id === el.floorId)
 
-      if (closestElevator.resting) {
-        setTimeout(() => {
-          closestElevator.state = 'idle'
-          closestElevator.isAvailable = true
-          closestElevator.resting = false
+      floors[floor.id - 1].isActive = true
 
-          if (floorIndex !== -1) {
-            floors[floorIndex].isActive = false
-          }
-        }, restTime)
-      } else {
-        closestElevator.state = 'resting'
-        closestElevator.resting = true
+      setTimeout(() => {
+        elevator.currentFloor = elevator.destinationFloor
 
-        setTimeout(() => {
-          closestElevator.state = 'idle'
-          closestElevator.inProgress = 'false'
-          closestElevator.isAvailable = true
-          closestElevator.resting = false
-
-          if (floorIndex !== -1) {
-            floors[floorIndex].isActive = false
-          }
-        }, restTime)
-      }
-    }, Math.abs(closestElevator.currentFloor - floor) * 1000)
+        elevator.state = 'resting'
+        elevator.resting = true
+        makeElevatorRest(elevator, floor.id - 1)
+      }, Math.abs(elevator.currentFloor - floor.id) * 1000)
+    }
   }
 }
 </script>
