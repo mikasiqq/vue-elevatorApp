@@ -30,12 +30,36 @@ for (let i = 0; i < elevatorFloors; i++) {
   })
 }
 
+function findClosestNotAvailableElevator(floor) {
+  let elevatorsCountInQueue = {}
+  for (const q of queue) {
+    elevatorsCountInQueue[q.elevatorId] = elevatorsCountInQueue[q.elevatorId]
+      ? elevatorsCountInQueue[q.elevatorId] + 1
+      : 1
+  }
+  const queueReverse = queue.slice().reverse()
+
+  let notAvailableElevator = {
+    id: queueReverse[0].elevatorId,
+    count: elevatorsCountInQueue[queueReverse[0].elevatorId]
+  }
+  for (const q of queueReverse) {
+    if (elevatorsCountInQueue[q.elevatorId] <= notAvailableElevator.count)
+      notAvailableElevator = {
+        id: q.elevatorId,
+        count: elevatorsCountInQueue[q.elevatorId]
+      }
+  }
+
+  queue.push({ elevatorId: notAvailableElevator.id, floorId: floor })
+}
+
 function findClosestAvailableElevator(floor) {
   let closestElevator = null
   let closestDistance = Infinity
 
   for (const elevator of elevators) {
-    if (elevator.isAvailable) {
+    if (elevator.isAvailable && elevator.state === 'idle') {
       const distance = Math.abs(elevator.currentFloor - floor)
       if (distance < closestDistance) {
         closestElevator = elevator
@@ -44,23 +68,42 @@ function findClosestAvailableElevator(floor) {
     }
   }
 
-  if (!closestElevator) {
-    const notAvailableElevator = elevators.find((elevator) => elevator.id === queue[0].elevatorId)
-    queue.shift()
-    queue.push({ elevatorId: notAvailableElevator.id, floorId: floor })
-  }
+  if (!closestElevator) findClosestNotAvailableElevator(floor)
 
   return closestElevator
 }
 
 function isElevatorAvailable(elevator, floor) {
-  return elevator.isAvailable && elevator.currentFloor !== floor && !floors[floor - 1].isActive
+  return elevator.currentFloor !== floor && !floors[floor - 1].isActive
 }
 
 function setElevatorState(elevator, floor) {
   elevator.isAvailable = false
   elevator.destinationFloor = floor
   elevator.state = elevator.currentFloor < floor ? 'goingUp' : 'goingDown'
+}
+
+function elevatorExistsInQueue(elevator) {
+  let elevatorInQueue = queue.find((q) => q.elevatorId === elevator.id)
+  if (elevatorInQueue) return true
+
+  if (elevatorInQueue) {
+    floors[elevatorInQueue.floorId - 1].isActive = true
+    elevator.state = elevator.currentFloor <= elevator.destinationFloor ? 'goingUp' : 'goingDown'
+
+    setTimeout(() => {
+      elevator.isAvailable = false
+      elevator.destinationFloor = elevatorInQueue.floorId
+
+      setTimeout(() => {
+        elevator.currentFloor = elevator.destinationFloor
+
+        elevator.state = 'resting'
+        elevator.resting = true
+        makeElevatorRest(elevator, elevatorInQueue.floorId - 1)
+      }, Math.abs(elevator.currentFloor - elevatorInQueue.floorId) * 1000 + restTime)
+    }, restTime)
+  }
 }
 
 function makeElevatorRest(elevator, floorIndex) {
@@ -71,47 +114,29 @@ function makeElevatorRest(elevator, floorIndex) {
     if (floorIndex !== -1) {
       floors[floorIndex].isActive = false
     }
-    queue.shift()
-
-    const elevatorInQueue = queue.find((q) => q.elevatorId === elevator.id)
-    if (elevatorInQueue) {
-      floors[elevatorInQueue.floorId - 1].isActive = true
-
-      setTimeout(() => {
-        elevator.destinationFloor = elevatorInQueue.floorId
-        elevator.state = elevator.currentFloor < elevator.destinationFloor ? 'goingUp' : 'goingDown'
-
-        setTimeout(() => {
-          elevator.currentFloor = elevator.destinationFloor
-
-          elevator.state = 'resting'
-          elevator.resting = true
-          makeElevatorRest(elevator, elevatorInQueue.floorId - 1)
-        }, Math.abs(elevator.currentFloor - elevatorInQueue.floorId) * 1000)
-        console.log(queue[0], elevator, 'el')
-      }, restTime)
-    }
-    console.log(elevators)
+    if (elevatorExistsInQueue(elevator)) queueHandler()
   }, restTime)
+  setTimeout(() => {
+    queue.shift()
+  }, 0)
 }
 
 function goToFloor(floor) {
   const closestElevator = findClosestAvailableElevator(floor)
 
-  if (!closestElevator || !isElevatorAvailable(closestElevator, floor)) return
-
-  setElevatorState(closestElevator, floor)
-
-  queue.push({ elevatorId: closestElevator.id, floorId: floor })
-  queueHandler()
+  if (closestElevator && isElevatorAvailable(closestElevator, floor)) {
+    queue.push({ elevatorId: closestElevator.id, floorId: floor })
+    queueHandler()
+  }
 }
 
 function queueHandler() {
-  if (queue.length > 0) {
-    for (const el of queue) {
-      const elevator = elevators.find((elevator) => elevator.id === el.elevatorId)
-      const floor = floors.find((floor) => floor.id === el.floorId)
+  for (const el of queue) {
+    const elevator = elevators.find((elevator) => elevator.id === el.elevatorId)
+    const floor = floors.find((floor) => floor.id === el.floorId)
 
+    if (elevator.isAvailable && elevator.state === 'idle') {
+      setElevatorState(elevator, el.floorId)
       floors[floor.id - 1].isActive = true
 
       setTimeout(() => {
