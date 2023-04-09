@@ -84,8 +84,7 @@ function setElevatorState(elevator, floor) {
 }
 
 function elevatorExistsInQueue(elevator) {
-  let elevatorInQueue = queue.find((q) => q.elevatorId === elevator.id)
-  if (elevatorInQueue) return true
+  return queue.find((q) => q.elevatorId === elevator.id)
 }
 
 function makeElevatorRest(elevator, floorIndex) {
@@ -98,9 +97,7 @@ function makeElevatorRest(elevator, floorIndex) {
     }
     if (elevatorExistsInQueue(elevator)) queueHandler()
   }, restTime)
-  setTimeout(() => {
-    queue.shift()
-  }, 0)
+  queue.shift()
 }
 
 function goToFloor(floor) {
