@@ -86,24 +86,6 @@ function setElevatorState(elevator, floor) {
 function elevatorExistsInQueue(elevator) {
   let elevatorInQueue = queue.find((q) => q.elevatorId === elevator.id)
   if (elevatorInQueue) return true
-
-  if (elevatorInQueue) {
-    floors[elevatorInQueue.floorId - 1].isActive = true
-    elevator.state = elevator.currentFloor <= elevator.destinationFloor ? 'goingUp' : 'goingDown'
-
-    setTimeout(() => {
-      elevator.isAvailable = false
-      elevator.destinationFloor = elevatorInQueue.floorId
-
-      setTimeout(() => {
-        elevator.currentFloor = elevator.destinationFloor
-
-        elevator.state = 'resting'
-        elevator.resting = true
-        makeElevatorRest(elevator, elevatorInQueue.floorId - 1)
-      }, Math.abs(elevator.currentFloor - elevatorInQueue.floorId) * 1000 + restTime)
-    }, restTime)
-  }
 }
 
 function makeElevatorRest(elevator, floorIndex) {
